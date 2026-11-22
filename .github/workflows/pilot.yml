@@ -12,11 +12,11 @@ jobs:
       - uses: actions/checkout@v4
       - run: pip install -q llama-cpp-python huggingface_hub
       - run: |
-          python3 pilot/pilot.py 2>&1 | tee pilot-out.txt | tail -30 || echo PILOT_FAIL | tee -a pilot-out.txt
+          python3 pilot/pilot.py 2>&1 | tee pilot-out.txt || echo PILOT_FAIL | tee -a pilot-out.txt
           mkdir -p results
           { echo "# pilot-r2r3"; echo "~~~"; cat pilot-out.txt; echo "~~~"; } > results/pilot-r2r3.md
           git config user.name "probe-bot" && git config user.email "probe-bot@local"
           git pull --rebase origin main 2>/dev/null || true
-          git add results/pilot-r2r3.md && git commit -m "pilot r2r3 results" && git push origin HEAD:main || true
+          git add results/pilot-r2r3.md && git commit -m "pilot r2r3 results" && git push origin HEAD:main || (sleep 30; git pull --rebase origin main >/dev/null 2>&1 || true; git add results/pilot-r2r3.md; git commit -m "pilot r2r3 results retry" 2>/dev/null || true; git push origin HEAD:main) || true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
