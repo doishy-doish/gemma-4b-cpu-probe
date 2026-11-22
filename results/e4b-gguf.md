@@ -1,7 +1,64 @@
 # e4b-gguf
 ~~~
-/home/runner/work/_temp/6d28ba25-7334-41b9-97f2-e38b9982a4b7.sh: line 1: kaggle: command not found
+usage: kaggle models get [-h] [-p FOLDER] model
+
+options:
+  -h, --help         show this help message and exit
+  model              Model URL suffix in format <owner>/<model-name>
+  -p, --path FOLDER  Folder containing the special model-metadata.json file (https://github.com/Kaggle/kaggle-cli/blob/main/docs/models_metadata.md).
+usage: kaggle models instances get [-h] [-p FOLDER] model_instance
+
+options:
+  -h, --help         show this help message and exit
+  model_instance     Model variation URL suffix in format <owner>/<model-name>/<framework>/<instance-slug>
+  -p, --path FOLDER  Folder for downloading the special model-instance-metadata.json file (https://github.com/Kaggle/kaggle-cli/blob/main/docs/models_metadata.md#model-instance). 
+usage: kaggle models instances files [-h] [-v | --format OUTPUT_FORMAT]
+                                     [--page-size PAGE_SIZE]
+                                     [--page-token PAGE_TOKEN]
+                                     model_instance
+
+options:
+  -h, --help            show this help message and exit
+  model_instance        Model variation URL suffix in format <owner>/<model-name>/<framework>/<instance-slug>
+  -v, --csv             Print results in CSV format (if not set print in table format)
+  --format OUTPUT_FORMAT
+                        Print results in selected format (csv, table, json). For details on advanced options, see
+                        https://github.com/Kaggle/kaggle-cli/blob/main/docs/output_format.md
+  --page-size PAGE_SIZE
+                        Number of items to show on a page. Default size is 20, max is 200
+  --page-token PAGE_TOKEN
+                        Page token for results paging.
+[Errno 2] No such file or directory: 'e4b/model-metadata.json'
 ls: cannot access 'e4b/': No such file or directory
+usage: kaggle models instances versions [-h]
+                                        {init,create,download,delete,files,list} ...
+
+options:
+  -h, --help            show this help message and exit
+
+commands:
+  {init,create,download,delete,files,list}
+    list                List model variation versions
+    create              Create a new model variation version
+    download            Download model variation version files
+    files               List model variation version files
+    delete              Delete a model variation version
+usage: kaggle models instances files [-h] [-v | --format OUTPUT_FORMAT]
+                                     [--page-size PAGE_SIZE]
+                                     [--page-token PAGE_TOKEN]
+                                     model_instance
+
+options:
+  -h, --help            show this help message and exit
+  model_instance        Model variation URL suffix in format <owner>/<model-name>/<framework>/<instance-slug>
+  -v, --csv             Print results in CSV format (if not set print in table format)
+  --format OUTPUT_FORMAT
+                        Print results in selected format (csv, table, json). For details on advanced options, see
+                        https://github.com/Kaggle/kaggle-cli/blob/main/docs/output_format.md
+  --page-size PAGE_SIZE
+                        Number of items to show on a page. Default size is 20, max is 200
+  --page-token PAGE_TOKEN
+                        Page token for results paging.
 GGUF_FILES []
 Traceback (most recent call last):
   File "/home/runner/work/gemma-4b-cpu-probe/gemma-4b-cpu-probe/smoke.py", line 5, in <module>
