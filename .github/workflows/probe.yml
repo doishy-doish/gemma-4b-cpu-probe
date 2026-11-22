@@ -15,7 +15,8 @@ jobs:
           kaggle models get -h 2>&1 | tee dl0.txt | head -20
           kaggle models instances get -h 2>&1 | tee -a dl0.txt | head -20
           kaggle models instances files -h 2>&1 | tee -a dl0.txt | head -20
-          kaggle models instances versions download ssfdre38/gemma4-turbo-e4b/Transformers/iq4xs/1 -p e4b 2>&1 | tee -a dl0.txt | tail -8 || true
+          kaggle models instances list ssfdre38/gemma4-turbo-e4b 2>&1 | tee -a dl0.txt | head -30 || true
+          for fw in transformers Transformers llama-cpp gguf; do echo "== FW $fw" | tee -a dl0.txt; kaggle models instances versions download ssfdre38/gemma4-turbo-e4b/$fw/iq4xs/1 -p e4b 2>&1 | tee -a dl0.txt | tail -3 || true; done
           ls -laR e4b/ 2>&1 | tee -a dl0.txt | head -20 || true
         env:
           KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
@@ -40,7 +41,7 @@ jobs:
           { echo "# e4b-gguf"; echo "~~~"; cat dl0.txt smoke-out.txt; echo "~~~"; } > results/e4b-gguf.md
           git config user.name "probe-bot" && git config user.email "probe-bot@local"
           git pull --rebase origin main 2>/dev/null || true
-          git add results/e4b-gguf.md && git commit -m "e4b-gguf v10 results" && git push origin HEAD:main || (sleep 20; git pull --rebase origin main >/dev/null 2>&1 || true; git push origin HEAD:main) || true
+          git add results/e4b-gguf.md && git commit -m "e4b-gguf v11 results" && git push origin HEAD:main || (sleep 20; git pull --rebase origin main >/dev/null 2>&1 || true; git push origin HEAD:main) || true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   loras:
