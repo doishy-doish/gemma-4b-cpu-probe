@@ -4,65 +4,83 @@ on:
 permissions:
   contents: write
 jobs:
-  smoke-4b:
+  smoke-full:
     runs-on: ubuntu-latest
     timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
       - run: pip install -q llama-cpp-python huggingface_hub
       - run: |
-          cat > smoke.py <<'PYEOF'
+          nproc; free -g
+          cat > full.py <<'PYEOF'
           import time
           from llama_cpp import Llama
           t0 = time.time()
-          llm = Llama.from_pretrained(repo_id="Qwen/Qwen3-4B-GGUF", filename="Qwen3-4B-Q4_K_M.gguf", n_ctx=2048, verbose=False)
-          t1 = time.time()
+          llm = Llama.from_pretrained(repo_id="Qwen/Qwen3-4B-GGUF", filename="Qwen3-4B-Q4_K_M.gguf", n_ctx=4096, verbose=False)
+          print("LOAD_S", round(time.time() - t0, 1), flush=True)
+          p1 = "You are an autonomous software engineer. Issue: chunked() in more_itertools/more.py mangles docstrings. Reply with the single most likely source file path, nothing else."
           t2 = time.time()
-          out = llm.create_chat_completion(messages=[{"role": "user", "content": "You are an autonomous software engineer. Issue: chunked() in more_itertools/more.py mangles docstrings. Reply with the single most likely source file path, nothing else."}], max_tokens=64, temperature=0.0)
+          o1 = llm.create_chat_completion(messages=[{"role": "user", "content": p1}], max_tokens=128, temperature=0.0)
           t3 = time.time()
-          print("LOAD_S", round(t1 - t0, 1))
-          print("GEN_S", round(t3 - t2, 1))
-          print("REPLY:", out["choices"][0]["message"]["content"][:300])
+          c1 = o1["choices"][0]["message"]["content"]
+          print("GEN1_S", round(t3 - t2, 1), "CHARS", len(c1), flush=True)
+          print("REPLY1-BEGIN")
+          print(c1)
+          print("REPLY1-END", flush=True)
+          p2 = "Fix this Python function so chunked() never yields an empty last chunk. Return ONLY a unified diff."
+          t4 = time.time()
+          o2 = llm.create_chat_completion(messages=[{"role": "user", "content": p2}], max_tokens=256, temperature=0.0)
+          t5 = time.time()
+          c2 = o2["choices"][0]["message"]["content"]
+          print("GEN2_S", round(t5 - t4, 1), "CHARS", len(c2), flush=True)
+          print("REPLY2-BEGIN")
+          print(c2)
+          print("REPLY2-END", flush=True)
           PYEOF
-          python3 smoke.py 2>&1 | tee smoke-out.txt | tail -12
+          python3 full.py 2>&1 | tee full-out.txt | tail -8
           mkdir -p results
-          { echo "# smoke-4b $(date -u +%FT%TZ)"; grep -E "LOAD_S|GEN_S|REPLY" smoke-out.txt; } > results/smoke-4b.md
+          { echo "# smoke-full"; echo "~~~"; cat full-out.txt; echo "~~~"; } > results/smoke-full.md
           git config user.name "probe-bot" && git config user.email "probe-bot@local"
           git pull --rebase origin main 2>/dev/null || true
-          git add results/smoke-4b.md && git commit -m "smoke-4b results" && git push origin HEAD:main
+          git add results/smoke-full.md && git commit -m "smoke-full results" && git push origin HEAD:main
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  e4b-recon:
+  e4b-hunt:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 20
     continue-on-error: true
     steps:
       - uses: actions/checkout@v4
       - run: pip install -q six kaggle requests
       - run: |
-          cat > recon.py <<'PYEOF'
-          import os, json, requests
+          kaggle models list -s gemma-4-e4b 2>&1 | head -20
+          echo "---"
+          kaggle models list -s gemma-4 2>&1 | head -30
+        env:
+          KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
+          KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
+      - run: |
+          cat > hunt.py <<'PYEOF'
+          import os, requests
           from requests.auth import HTTPBasicAuth
           A = HTTPBasicAuth(os.environ["KAGGLE_USERNAME"], os.environ["KAGGLE_KEY"])
-          def get(u):
-              r = requests.get(u, auth=A, allow_redirects=True, timeout=120)
-              print(u, "->", r.status_code, len(r.content))
-              return r
-          r = get("https://api.kaggle.com/api/v1/models/google/gemma-4/get")
-          try:
-              j = r.json()
-              print("TITLE:", j.get("title"))
-              print(json.dumps(j, indent=1)[:2500])
-          except Exception as ex:
-              print("META_JSON_FAIL", str(ex)[:120])
-              print(r.text[:300])
+          urls = ["https://api.kaggle.com/api/v1/models/list?search=gemma-4-e4b", "https://api.kaggle.com/api/v1/models/list?search=gemma-4-developer-agent"]
+          import json as J
+          
+for u in urls:
+              try:
+                  r = requests.get(u, auth=A, timeout=60)
+                  print(u.split("api/v1/")[1], "->", r.status_code, len(r.content))
+                  print(r.text[:600])
+              except Exception as ex:
+                  print(u, "ERR", str(ex)[:100])
           PYEOF
-          python3 recon.py 2>&1 | tee recon-out.txt | tail -45
+          python3 hunt.py 2>&1 | tee hunt-out.txt | tail -30
           mkdir -p results
-          { echo "# e4b-recon $(date -u +%FT%TZ)"; cat recon-out.txt; } > results/e4b-recon.md
+          { echo "# e4b-hunt"; echo "~~~"; cat hunt-out.txt; echo "~~~"; } > results/e4b-hunt.md
           git config user.name "probe-bot" && git config user.email "probe-bot@local"
           git pull --rebase origin main 2>/dev/null || true
-          git add results/e4b-recon.md && git commit -m "e4b-recon results" && git push origin HEAD:main
+          git add results/e4b-hunt.md && git commit -m "e4b-hunt results" && git push origin HEAD:main
         env:
           KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
           KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
