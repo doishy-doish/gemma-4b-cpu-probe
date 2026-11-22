@@ -4,20 +4,27 @@ on:
 permissions:
   contents: write
 jobs:
-  smoke-25:
+  e4b-gguf:
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 60
+    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
       - run: pip install -q llama-cpp-python huggingface_hub
       - run: |
-          nproc; free -g
-          cat > full.py <<'PYEOF'
-          import time
+          kaggle models download -m ssfdre38/gemma4-turbo-e4b -p e4b 2>&1 | tee dl1.txt | tail -5
+          ls -la e4b/ 2>&1 | tee -a dl1.txt
+        env:
+          KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
+          KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
+      - run: |
+          cat > smoke.py <<'PYEOF'
+          import time, glob
           from llama_cpp import Llama
-          t0 = time.time()
-          llm = Llama.from_pretrained(repo_id="Qwen/Qwen2.5-3B-Instruct-GGUF", filename="qwen2.5-3b-instruct-q4_k_m.gguf", n_ctx=4096, verbose=False)
-          print("LOAD_S", round(time.time() - t0, 1), flush=True)
+          fs = glob.glob("e4b/*.gguf") + glob.glob("e4b/**/*.gguf")
+          print("GGUF_FILES", fs, flush=True)
+          llm = Llama(model_path=fs[0], n_ctx=4096, verbose=False)
+          print("LOADED", fs[0], flush=True)
           p1 = "You are an autonomous software engineer. Issue: chunked() in more_itertools. Reply with the single most likely source file path, nothing else."
           t2 = time.time()
           o1 = llm.create_chat_completion(messages=[{"role": "user", "content": p1}], max_tokens=64, temperature=0.0)
@@ -27,69 +34,35 @@ jobs:
           print("REPLY1-BEGIN")
           print(c1)
           print("REPLY1-END", flush=True)
-          p2 = "Fix this Python function so chunked() never yields an empty last chunk. Return ONLY a unified diff, no explanation."
-          t4 = time.time()
-          o2 = llm.create_chat_completion(messages=[{"role": "user", "content": p2}], max_tokens=256, temperature=0.0)
-          t5 = time.time()
-          c2 = o2["choices"][0]["message"]["content"]
-          print("GEN2_S", round(t5 - t4, 1), "CHARS", len(c2), flush=True)
-          print("REPLY2-BEGIN")
-          print(c2)
-          print("REPLY2-END", flush=True)
           PYEOF
-          python3 full.py 2>&1 | tee full-out.txt | tail -8
+          python3 smoke.py 2>&1 | tee smoke-out.txt | tail -10
           mkdir -p results
-          { echo "# smoke-25"; echo "~~~"; cat full-out.txt; echo "~~~"; } > results/smoke-25.md
+          { echo "# e4b-gguf"; echo "~~~"; cat dl1.txt smoke-out.txt; echo "~~~"; } > results/e4b-gguf.md
           git config user.name "probe-bot" && git config user.email "probe-bot@local"
           git pull --rebase origin main 2>/dev/null || true
-          git add results/smoke-25.md && git commit -m "smoke-25 results" && git push origin HEAD:main
+          git add results/e4b-gguf.md && git commit -m "e4b-gguf results" && git push origin HEAD:main
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  e4b-dl:
+  omallo-lora:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 30
     continue-on-error: true
     steps:
       - uses: actions/checkout@v4
-      - run: pip install -q six kaggle requests
+      - run: pip install -q six kaggle
       - run: |
-          kaggle models list -s gemma-4-e4b 2>&1 | tee cli-e4b.txt | head -20
-          echo "---" | tee -a cli-e4b.txt
-          kaggle models list -s gemma-4 2>&1 | tee -a cli-e4b.txt | head -40
+          kaggle models list -s swe-agent-lora 2>&1 | tee cli-lora.txt | head -20
+          kaggle models download -m omallo/gemma4-e4b-swe-agent-lora-from-31b -p lora 2>&1 | tee -a cli-lora.txt | tail -5
+          ls -laR lora/ 2>&1 | tee -a cli-lora.txt | head -30
+          find lora/ -name "*.json" | head -5 | xargs -I{} sh -c 'echo "=== {} ==="; cat {}' 2>&1 | tee -a cli-lora.txt | head -60
         env:
           KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
           KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
       - run: |
-          cat > dl.py <<'PYEOF'
-          import os, requests
-          from requests.auth import HTTPBasicAuth
-          A = HTTPBasicAuth(os.environ["KAGGLE_USERNAME"], os.environ["KAGGLE_KEY"])
-          u = "https://api.kaggle.com/api/v1/models/google/gemma-4/Other/gemma-4-e4b-it-qat-w4a16-ct/2/download"
-          print("GET", u, flush=True)
-          r = requests.get(u, auth=A, allow_redirects=True, timeout=300, stream=True)
-          print("STATUS", r.status_code, "CT", r.headers.get("content-type"), "LEN", r.headers.get("content-length"), flush=True)
-          n = 0
-          open("e4b.bin", "wb").close()
-          f = open("e4b.bin", "ab")
-          cap = 4 * 1024 * 1024 * 1024
-          done = False
-          for ch in r.iter_content(1 << 20):
-              f.write(ch)
-              n += len(ch)
-              if n > cap:
-                  done = True
-                  break
-          f.close()
-          print("SAVED_BYTES", n, "TRUNCATED", done, flush=True)
-          PYEOF
-          python3 dl.py 2>&1 | tee dl-out.txt | tail -12
-          ls -la | tee -a dl-out.txt
           mkdir -p results
-          { echo "# e4b-dl"; echo "~~~"; cat cli-e4b.txt dl-out.txt; echo "~~~"; } > results/e4b-dl.md
+          { echo "# omallo-lora"; echo "~~~"; cat cli-lora.txt; echo "~~~"; } > results/omallo-lora.md
           git config user.name "probe-bot" && git config user.email "probe-bot@local"
           git pull --rebase origin main 2>/dev/null || true
-          git add results/e4b-dl.md && git commit -m "e4b-dl results" && git push origin HEAD:main
+          git add results/omallo-lora.md && git commit -m "omallo-lora results" && git push origin HEAD:main
         env:
-          KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
-          KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
