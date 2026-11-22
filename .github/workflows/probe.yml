@@ -18,7 +18,7 @@ jobs:
           t0 = time.time()
           llm = Llama.from_pretrained(repo_id="Qwen/Qwen3-4B-GGUF", filename="Qwen3-4B-Q4_K_M.gguf", n_ctx=4096, verbose=False)
           print("LOAD_S", round(time.time() - t0, 1), flush=True)
-          p1 = "You are an autonomous software engineer. Issue: chunked() in more_itertools/more.py mangles docstrings. Reply with the single most likely source file path, nothing else."
+          p1 = "You are an autonomous software engineer. Issue: chunked() in more_itertools. Reply with the single most likely source file path, nothing else."
           t2 = time.time()
           o1 = llm.create_chat_completion(messages=[{"role": "user", "content": p1}], max_tokens=128, temperature=0.0)
           t3 = time.time()
@@ -27,15 +27,6 @@ jobs:
           print("REPLY1-BEGIN")
           print(c1)
           print("REPLY1-END", flush=True)
-          p2 = "Fix this Python function so chunked() never yields an empty last chunk. Return ONLY a unified diff."
-          t4 = time.time()
-          o2 = llm.create_chat_completion(messages=[{"role": "user", "content": p2}], max_tokens=256, temperature=0.0)
-          t5 = time.time()
-          c2 = o2["choices"][0]["message"]["content"]
-          print("GEN2_S", round(t5 - t4, 1), "CHARS", len(c2), flush=True)
-          print("REPLY2-BEGIN")
-          print(c2)
-          print("REPLY2-END", flush=True)
           PYEOF
           python3 full.py 2>&1 | tee full-out.txt | tail -8
           mkdir -p results
@@ -64,16 +55,12 @@ jobs:
           import os, requests
           from requests.auth import HTTPBasicAuth
           A = HTTPBasicAuth(os.environ["KAGGLE_USERNAME"], os.environ["KAGGLE_KEY"])
-          urls = ["https://api.kaggle.com/api/v1/models/list?search=gemma-4-e4b", "https://api.kaggle.com/api/v1/models/list?search=gemma-4-developer-agent"]
-          import json as J
-          
-for u in urls:
-              try:
-                  r = requests.get(u, auth=A, timeout=60)
-                  print(u.split("api/v1/")[1], "->", r.status_code, len(r.content))
-                  print(r.text[:600])
-              except Exception as ex:
-                  print(u, "ERR", str(ex)[:100])
+          r1 = requests.get("https://api.kaggle.com/api/v1/models/list?search=gemma-4-e4b", auth=A, timeout=60)
+          print("list-e4b", r1.status_code, len(r1.content))
+          print(r1.text[:800])
+          r2 = requests.get("https://api.kaggle.com/api/v1/models/list?search=gemma-4", auth=A, timeout=60)
+          print("list-g4", r2.status_code, len(r2.content))
+          print(r2.text[:800])
           PYEOF
           python3 hunt.py 2>&1 | tee hunt-out.txt | tail -30
           mkdir -p results
