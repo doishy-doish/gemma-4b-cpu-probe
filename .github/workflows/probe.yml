@@ -10,10 +10,11 @@ jobs:
     continue-on-error: true
     steps:
       - uses: actions/checkout@v4
-      - run: pip install -q llama-cpp-python huggingface_hub
+      - run: pip install -q six kaggle llama-cpp-python huggingface_hub
       - run: |
-          kaggle models download -m ssfdre38/gemma4-turbo-e4b -p e4b 2>&1 | tee dl1.txt | tail -5
-          ls -la e4b/ 2>&1 | tee -a dl1.txt
+          kaggle models instances -h 2>&1 | tee dl0.txt | head -30
+          kaggle models instances download -m ssfdre38/gemma4-turbo-e4b -p e4b 2>&1 | tee -a dl0.txt | tail -5
+          ls -la e4b/ 2>&1 | tee -a dl0.txt
         env:
           KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
           KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
@@ -29,21 +30,18 @@ jobs:
           t2 = time.time()
           o1 = llm.create_chat_completion(messages=[{"role": "user", "content": p1}], max_tokens=64, temperature=0.0)
           t3 = time.time()
-          c1 = o1["choices"][0]["message"]["content"]
-          print("GEN1_S", round(t3 - t2, 1), "CHARS", len(c1), flush=True)
-          print("REPLY1-BEGIN")
-          print(c1)
-          print("REPLY1-END", flush=True)
+          print("GEN1_S", round(t3 - t2, 1), flush=True)
+          print("REPLY1:", o1["choices"][0]["message"]["content"][:200], flush=True)
           PYEOF
           python3 smoke.py 2>&1 | tee smoke-out.txt | tail -10
           mkdir -p results
-          { echo "# e4b-gguf"; echo "~~~"; cat dl1.txt smoke-out.txt; echo "~~~"; } > results/e4b-gguf.md
+          { echo "# e4b-gguf"; echo "~~~"; cat dl0.txt smoke-out.txt; echo "~~~"; } > results/e4b-gguf.md
           git config user.name "probe-bot" && git config user.email "probe-bot@local"
           git pull --rebase origin main 2>/dev/null || true
-          git add results/e4b-gguf.md && git commit -m "e4b-gguf results" && git push origin HEAD:main
+          git add results/e4b-gguf.md && git commit -m "e4b-gguf v6 results" && git push origin HEAD:main
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  omallo-lora:
+  loras:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     continue-on-error: true
@@ -51,18 +49,22 @@ jobs:
       - uses: actions/checkout@v4
       - run: pip install -q six kaggle
       - run: |
-          kaggle models list -s swe-agent-lora 2>&1 | tee cli-lora.txt | head -20
-          kaggle models download -m omallo/gemma4-e4b-swe-agent-lora-from-31b -p lora 2>&1 | tee -a cli-lora.txt | tail -5
-          ls -laR lora/ 2>&1 | tee -a cli-lora.txt | head -30
-          find lora/ -name "*.json" | head -5 | xargs -I{} sh -c 'echo "=== {} ==="; cat {}' 2>&1 | tee -a cli-lora.txt | head -60
+          kaggle models list -s swe-agent-lora 2>&1 | tee cli.txt | head -12
+          kaggle models list -s loop-breaker 2>&1 | tee -a cli.txt | head -12
+          for m in omallo/gemma4-e4b-swe-agent-lora-from-31b robinamirbahar/gemma-4-31b-loop-breaker-lora robinamirbahar/gemma-4-ccr-loop-breaker; do
+            echo "=== $m ===" | tee -a cli.txt
+            kaggle models instances download -m $m -p lora-$RANDOM 2>&1 | tee -a cli.txt | tail -3
+          done
+          ls -laR lora-* 2>/dev/null | tee -a cli.txt | head -40
+          find lora-* -name "*.json" 2>/dev/null | head -8 | xargs -I{} sh -c 'echo "=== {} ==="; cat {}' 2>&1 | tee -a cli.txt | head -80
         env:
           KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
           KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
       - run: |
           mkdir -p results
-          { echo "# omallo-lora"; echo "~~~"; cat cli-lora.txt; echo "~~~"; } > results/omallo-lora.md
+          { echo "# loras"; echo "~~~"; cat cli.txt; echo "~~~"; } > results/loras.md
           git config user.name "probe-bot" && git config user.email "probe-bot@local"
           git pull --rebase origin main 2>/dev/null || true
-          git add results/omallo-lora.md && git commit -m "omallo-lora results" && git push origin HEAD:main
+          git add results/loras.md && git commit -m "loras results" && git push origin HEAD:main
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
