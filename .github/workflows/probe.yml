@@ -1,11 +1,14 @@
 name: 4b-cpu-probe
 on:
   workflow_dispatch: {}
+permissions:
+  contents: write
 jobs:
   smoke-4b:
     runs-on: ubuntu-latest
     timeout-minutes: 40
     steps:
+      - uses: actions/checkout@v4
       - run: pip install -q llama-cpp-python huggingface_hub
       - run: |
           cat > smoke.py <<'PYEOF'
@@ -21,12 +24,20 @@ jobs:
           print("GEN_S", round(t3 - t2, 1))
           print("REPLY:", out["choices"][0]["message"]["content"][:300])
           PYEOF
-          python3 smoke.py 2>&1 | tail -12
+          python3 smoke.py 2>&1 | tee smoke-out.txt | tail -12
+          mkdir -p results
+          { echo "# smoke-4b $(date -u +%FT%TZ)"; grep -E "LOAD_S|GEN_S|REPLY" smoke-out.txt; } > results/smoke-4b.md
+          git config user.name "probe-bot" && git config user.email "probe-bot@local"
+          git pull --rebase origin main 2>/dev/null || true
+          git add results/smoke-4b.md && git commit -m "smoke-4b results" && git push origin HEAD:main
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   e4b-recon:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     continue-on-error: true
     steps:
+      - uses: actions/checkout@v4
       - run: pip install -q six kaggle requests
       - run: |
           cat > recon.py <<'PYEOF'
@@ -46,7 +57,13 @@ jobs:
               print("META_JSON_FAIL", str(ex)[:120])
               print(r.text[:300])
           PYEOF
-          python3 recon.py 2>&1 | tail -45
+          python3 recon.py 2>&1 | tee recon-out.txt | tail -45
+          mkdir -p results
+          { echo "# e4b-recon $(date -u +%FT%TZ)"; cat recon-out.txt; } > results/e4b-recon.md
+          git config user.name "probe-bot" && git config user.email "probe-bot@local"
+          git pull --rebase origin main 2>/dev/null || true
+          git add results/e4b-recon.md && git commit -m "e4b-recon results" && git push origin HEAD:main
         env:
           KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
           KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
