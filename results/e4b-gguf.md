@@ -28,24 +28,12 @@ options:
                         Number of items to show on a page. Default size is 20, max is 200
   --page-token PAGE_TOKEN
                         Page token for results paging.
-      version  notes            created                                                                                                                                                                                                                                                             size  
--------------  ---------------  ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------  ----------------------  
-            1  Initial release  {"status": "READY", "creationPercentComplete": 1, "creationException": null, "creationLastUpdate": "2026-05-10T22:39:43.204Z", "creationStep": "Ready", "creationStart": "2026-05-10T22:38:18.257Z", "userMessage": null, "versionNumber": null}             11171144192  
-usage: kaggle models instances versions download [-h] [-p PATH] [--untar] [-f]
-                                                 [-q]
-                                                 model_instance_version
+404 Client Error: Not Found for url: https://api.kaggle.com/v1/models.ModelApiService/DownloadModelInstanceVersion
 
-options:
-  -h, --help            show this help message and exit
-  model_instance_version
-                        Model variation version URL suffix in format <owner>/<model-name>/<framework>/<variation-slug>/<version-number>
-  -p, --path PATH       Folder where file(s) will be downloaded, defaults to current working directory
-  --untar               Untar the downloaded file. Will delete the tar file when completed.
-  -f, --force           Skip check whether local version of file is up to date, force file download
-  -q, --quiet           Suppress printing information about the upload/download progress
-      version  variation      title               private  
--------------  -------------  ----------------  ---------  
-            1  iq4xs          gemma4-turbo-e4b      False  
+The resource was not found. Check the spelling of the reference you passed.
+References are usually '<owner>/<slug>', which you can find in the resource's URL.
+To search for one, try 'kaggle search <query>'.
+ls: cannot access 'e4b/': No such file or directory
 GGUF_FILES []
 Traceback (most recent call last):
   File "/home/runner/work/gemma-4b-cpu-probe/gemma-4b-cpu-probe/smoke.py", line 5, in <module>
