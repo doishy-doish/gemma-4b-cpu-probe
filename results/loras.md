@@ -12,15 +12,24 @@
 777697  robinamirbahar/gemma-4-ccr-loop-breaker          Gemma 4 CCR Loop-Breaker Adapter & Agent Config  Counterfactual Context Reset (CCR) LoRA adapter and ADK configuration for Gemma 4 31B SWE agents  Robina Mirbahar   
 788578  ramprasadatluri/redis-cache-thrashing-predictor  Redis Cache Thrashing Predictor                  Predicts Redis in-memory cache eviction storms and hit-rate collapse                              Ramprasad Atluri  
 === omallo/gemma4-e4b-swe-agent-lora-from-31b ===
-usage: kaggle models instances [-h]
-                               {versions,v,get,files,list,init,create,delete,update} ...
-kaggle models instances: error: argument command: invalid choice: 'download' (choose from versions, v, get, files, list, init, create, delete, update)
+usage: kaggle [-h] [-v] [-W] [--debug]
+              {competitions,c,datasets,d,kernels,k,models,m,files,forums,f,benchmarks,b,config,auth,quota,search} ...
+kaggle: error: unrecognized arguments: -m
+usage: kaggle [-h] [-v] [-W] [--debug]
+              {competitions,c,datasets,d,kernels,k,models,m,files,forums,f,benchmarks,b,config,auth,quota,search} ...
+kaggle: error: unrecognized arguments: -m
 === robinamirbahar/gemma-4-31b-loop-breaker-lora ===
-usage: kaggle models instances [-h]
-                               {versions,v,get,files,list,init,create,delete,update} ...
-kaggle models instances: error: argument command: invalid choice: 'download' (choose from versions, v, get, files, list, init, create, delete, update)
+usage: kaggle [-h] [-v] [-W] [--debug]
+              {competitions,c,datasets,d,kernels,k,models,m,files,forums,f,benchmarks,b,config,auth,quota,search} ...
+kaggle: error: unrecognized arguments: -m
+usage: kaggle [-h] [-v] [-W] [--debug]
+              {competitions,c,datasets,d,kernels,k,models,m,files,forums,f,benchmarks,b,config,auth,quota,search} ...
+kaggle: error: unrecognized arguments: -m
 === robinamirbahar/gemma-4-ccr-loop-breaker ===
-usage: kaggle models instances [-h]
-                               {versions,v,get,files,list,init,create,delete,update} ...
-kaggle models instances: error: argument command: invalid choice: 'download' (choose from versions, v, get, files, list, init, create, delete, update)
+usage: kaggle [-h] [-v] [-W] [--debug]
+              {competitions,c,datasets,d,kernels,k,models,m,files,forums,f,benchmarks,b,config,auth,quota,search} ...
+kaggle: error: unrecognized arguments: -m
+usage: kaggle [-h] [-v] [-W] [--debug]
+              {competitions,c,datasets,d,kernels,k,models,m,files,forums,f,benchmarks,b,config,auth,quota,search} ...
+kaggle: error: unrecognized arguments: -m
 ~~~
