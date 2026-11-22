@@ -15,9 +15,10 @@ jobs:
           kaggle models get -h 2>&1 | tee dl0.txt | head -20
           kaggle models instances get -h 2>&1 | tee -a dl0.txt | head -20
           kaggle models instances files -h 2>&1 | tee -a dl0.txt | head -20
-          kaggle models instances get -m ssfdre38/gemma4-turbo-e4b -p e4b 2>&1 | tee -a dl0.txt | tail -5 || true
-          kaggle models get -m ssfdre38/gemma4-turbo-e4b -p e4b 2>&1 | tee -a dl0.txt | tail -5 || true
-          ls -la e4b/ 2>&1 | tee -a dl0.txt
+          kaggle models get -p e4b ssfdre38/gemma4-turbo-e4b 2>&1 | tee -a dl0.txt | tail -5 || true
+          ls -laR e4b/ 2>&1 | tee -a dl0.txt || true
+          kaggle models instances versions -h 2>&1 | tee -a dl0.txt | head -15 || true
+          kaggle models instances files -h 2>&1 | tee -a dl0.txt | head -15 || true
         env:
           KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
           KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
@@ -41,7 +42,7 @@ jobs:
           { echo "# e4b-gguf"; echo "~~~"; cat dl0.txt smoke-out.txt; echo "~~~"; } > results/e4b-gguf.md
           git config user.name "probe-bot" && git config user.email "probe-bot@local"
           git pull --rebase origin main 2>/dev/null || true
-          git add results/e4b-gguf.md && git commit -m "e4b-gguf v6 results" && git push origin HEAD:main
+          git add results/e4b-gguf.md && git commit -m "e4b-gguf v8 results" && git push origin HEAD:main || (sleep 20; git pull --rebase origin main >/dev/null 2>&1 || true; git push origin HEAD:main) || true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   loras:
@@ -56,8 +57,7 @@ jobs:
           kaggle models list -s loop-breaker 2>&1 | tee -a cli.txt | head -12
           for m in omallo/gemma4-e4b-swe-agent-lora-from-31b robinamirbahar/gemma-4-31b-loop-breaker-lora robinamirbahar/gemma-4-ccr-loop-breaker; do
             echo "=== $m ===" | tee -a cli.txt
-            kaggle models instances files -m $m 2>&1 | tee -a cli.txt | head -15 || true
-            kaggle models instances get -m $m -p lq 2>&1 | tee -a cli.txt | tail -3 || true
+            kaggle models instances files $m 2>&1 | tee -a cli.txt | head -15 || true
           done
           ls -laR lora-* 2>/dev/null | tee -a cli.txt | head -40
           find lora-* -name "*.json" 2>/dev/null | head -8 | xargs -I{} sh -c 'echo "=== {} ==="; cat {}' 2>&1 | tee -a cli.txt | head -80
@@ -80,7 +80,7 @@ jobs:
       - uses: actions/checkout@v4
       - run: pip install -q six kaggle
       - run: |
-          kaggle competitions leaderboard -c enveda-CASMI26-molecule-id-mass-spectra 2>&1 | tee board.txt | head -30 || true
+          kaggle competitions leaderboard -c enveda-CASMI26-molecule-id-mass-spectra --show 2>&1 | tee board.txt | head -30 || true
         env:
           KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
           KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
