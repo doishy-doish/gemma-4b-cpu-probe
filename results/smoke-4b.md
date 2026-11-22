@@ -1,0 +1,4 @@
+# smoke-4b 2026-11-22T10:49:42Z
+LOAD_S 22.2
+GEN_S 5.9
+REPLY: <think>
