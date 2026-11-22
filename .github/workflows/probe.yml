@@ -15,10 +15,9 @@ jobs:
           kaggle models get -h 2>&1 | tee dl0.txt | head -20
           kaggle models instances get -h 2>&1 | tee -a dl0.txt | head -20
           kaggle models instances files -h 2>&1 | tee -a dl0.txt | head -20
-          kaggle models get -p e4b ssfdre38/gemma4-turbo-e4b 2>&1 | tee -a dl0.txt | tail -5 || true
-          ls -laR e4b/ 2>&1 | tee -a dl0.txt || true
-          kaggle models instances versions -h 2>&1 | tee -a dl0.txt | head -15 || true
-          kaggle models instances files -h 2>&1 | tee -a dl0.txt | head -15 || true
+          kaggle models instances list ssfdre38/gemma4-turbo-e4b 2>&1 | tee -a dl0.txt | head -20 || true
+          kaggle models instances versions download -h 2>&1 | tee -a dl0.txt | head -25 || true
+          kaggle models instances versions list ssfdre38/gemma4-turbo-e4b/Transformers/default 2>&1 | tee -a dl0.txt | head -10 || true
         env:
           KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
           KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
@@ -42,10 +41,11 @@ jobs:
           { echo "# e4b-gguf"; echo "~~~"; cat dl0.txt smoke-out.txt; echo "~~~"; } > results/e4b-gguf.md
           git config user.name "probe-bot" && git config user.email "probe-bot@local"
           git pull --rebase origin main 2>/dev/null || true
-          git add results/e4b-gguf.md && git commit -m "e4b-gguf v8 results" && git push origin HEAD:main || (sleep 20; git pull --rebase origin main >/dev/null 2>&1 || true; git push origin HEAD:main) || true
+          git add results/e4b-gguf.md && git commit -m "e4b-gguf v9 results" && git push origin HEAD:main || (sleep 20; git pull --rebase origin main >/dev/null 2>&1 || true; git push origin HEAD:main) || true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   loras:
+    needs: [e4b-gguf]
     runs-on: ubuntu-latest
     timeout-minutes: 30
     continue-on-error: true
@@ -73,6 +73,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   board:
+    needs: [loras]
     runs-on: ubuntu-latest
     timeout-minutes: 10
     continue-on-error: true
