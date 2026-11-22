@@ -24,9 +24,11 @@ jobs:
           KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
       - run: |
           cat > smoke.py <<'PYEOF'
-          import time, glob
+          import time, glob, os
           from llama_cpp import Llama
-          fs = glob.glob("e4b/*.gguf") + glob.glob("e4b/**/*.gguf")
+          allf = glob.glob("e4b/*.gguf") + glob.glob("e4b/**/*.gguf")
+          print("GGUF_ALL", [(p, os.path.getsize(p)) for p in allf], flush=True)
+          fs = sorted([p for p in allf if "mmproj" not in p.lower()], key=lambda p: os.path.getsize(p), reverse=True)
           print("GGUF_FILES", fs, flush=True)
           llm = Llama(model_path=fs[0], n_ctx=4096, verbose=False)
           print("LOADED", fs[0], flush=True)
@@ -42,7 +44,7 @@ jobs:
           { echo "# e4b-gguf"; echo "~~~"; cat dl0.txt smoke-out.txt; echo "~~~"; } > results/e4b-gguf.md
           git config user.name "probe-bot" && git config user.email "probe-bot@local"
           git pull --rebase origin main 2>/dev/null || true
-          git add results/e4b-gguf.md && git commit -m "e4b-gguf v12 results" && git push origin HEAD:main || (sleep 45; git pull --rebase origin main >/dev/null 2>&1 || true; git push origin HEAD:main || sleep 45; git pull --rebase origin main >/dev/null 2>&1 || true; git push origin HEAD:main) || true
+          git add results/e4b-gguf.md && git commit -m "e4b-gguf v13 results" && git push origin HEAD:main || (sleep 45; git pull --rebase origin main >/dev/null 2>&1 || true; git push origin HEAD:main || sleep 45; git pull --rebase origin main >/dev/null 2>&1 || true; git push origin HEAD:main) || true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   loras:
